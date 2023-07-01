@@ -26,36 +26,36 @@
 #include "hog.h"
 
 enum {
-	HIDS_REMOTE_WAKE = BIT(0),
-	HIDS_NORMALLY_CONNECTABLE = BIT(1),
+    HIDS_REMOTE_WAKE = BIT(0),
+    HIDS_NORMALLY_CONNECTABLE = BIT(1),
 };
 
 struct hids_info {
-	uint16_t version; /* version number of base USB HID Specification */
-	uint8_t code; /* country HID Device hardware is localized for. */
-	uint8_t flags;
+    uint16_t version; /* version number of base USB HID Specification */
+    uint8_t code; /* country HID Device hardware is localized for. */
+    uint8_t flags;
 } __packed;
 
 struct hids_report {
-	uint8_t id; // report id
-	uint8_t type; // report type
+    uint8_t id; // report id
+    uint8_t type; // report type
 } __packed;
 
 static struct hids_info info = {
-	.version = 0x0000,
-	.code = 0x00,
-	.flags = HIDS_NORMALLY_CONNECTABLE,
+    .version = 0x0000,
+    .code = 0x00,
+    .flags = HIDS_NORMALLY_CONNECTABLE,
 };
 
 enum {
-	HIDS_INPUT = 0x01,
-	HIDS_OUTPUT = 0x02,
-	HIDS_FEATURE = 0x03,
+    HIDS_INPUT = 0x01,
+    HIDS_OUTPUT = 0x02,
+    HIDS_FEATURE = 0x03,
 };
 
 static struct hids_report input = {
-	.id = 0x01,
-	.type = HIDS_INPUT,
+    .id = 0x01,
+    .type = HIDS_INPUT,
 };
 
 struct {
@@ -107,55 +107,55 @@ static uint8_t report_map[] = {
 
 
 static ssize_t read_info(struct bt_conn *conn,
-			  const struct bt_gatt_attr *attr, void *buf,
-			  uint16_t len, uint16_t offset)
+              const struct bt_gatt_attr *attr, void *buf,
+              uint16_t len, uint16_t offset)
 {
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, attr->user_data,
-				 sizeof(struct hids_info));
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, attr->user_data,
+                 sizeof(struct hids_info));
 }
 
 static ssize_t read_report_map(struct bt_conn *conn,
-			       const struct bt_gatt_attr *attr, void *buf,
-			       uint16_t len, uint16_t offset)
+                   const struct bt_gatt_attr *attr, void *buf,
+                   uint16_t len, uint16_t offset)
 {
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, report_map,
-				 sizeof(report_map));
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, report_map,
+                 sizeof(report_map));
 }
 
 static ssize_t read_report(struct bt_conn *conn,
-			   const struct bt_gatt_attr *attr, void *buf,
-			   uint16_t len, uint16_t offset)
+               const struct bt_gatt_attr *attr, void *buf,
+               uint16_t len, uint16_t offset)
 {
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, attr->user_data,
-				 sizeof(struct hids_report));
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, attr->user_data,
+                 sizeof(struct hids_report));
 }
 
 static void input_ccc_changed(const struct bt_gatt_attr *attr, uint16_t value)
 {
-	simulate_input = (value == BT_GATT_CCC_NOTIFY) ? 1 : 0;
+    simulate_input = (value == BT_GATT_CCC_NOTIFY) ? 1 : 0;
 }
 
 static ssize_t read_input_report(struct bt_conn *conn,
-				 const struct bt_gatt_attr *attr, void *buf,
-				 uint16_t len, uint16_t offset)
+                 const struct bt_gatt_attr *attr, void *buf,
+                 uint16_t len, uint16_t offset)
 {
-	return bt_gatt_attr_read(conn, attr, buf, len, offset, NULL, 0);
+    return bt_gatt_attr_read(conn, attr, buf, len, offset, NULL, 0);
 }
 
 static ssize_t write_ctrl_point(struct bt_conn *conn,
-				const struct bt_gatt_attr *attr,
-				const void *buf, uint16_t len, uint16_t offset,
-				uint8_t flags)
+                const struct bt_gatt_attr *attr,
+                const void *buf, uint16_t len, uint16_t offset,
+                uint8_t flags)
 {
-	uint8_t *value = attr->user_data;
+    uint8_t *value = attr->user_data;
 
-	if (offset + len > sizeof(ctrl_point)) {
-		return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
-	}
+    if (offset + len > sizeof(ctrl_point)) {
+        return BT_GATT_ERR(BT_ATT_ERR_INVALID_OFFSET);
+    }
 
-	memcpy(value + offset, buf, len);
+    memcpy(value + offset, buf, len);
 
-	return len;
+    return len;
 }
 
 #if CONFIG_SAMPLE_BT_USE_AUTHENTICATION
@@ -170,23 +170,23 @@ static ssize_t write_ctrl_point(struct bt_conn *conn,
 
 /* HID Service Declaration */
 BT_GATT_SERVICE_DEFINE(hog_svc,
-	BT_GATT_PRIMARY_SERVICE(BT_UUID_HIDS),
-	BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_INFO, BT_GATT_CHRC_READ,
-			       BT_GATT_PERM_READ, read_info, NULL, &info),
-	BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT_MAP, BT_GATT_CHRC_READ,
-			       BT_GATT_PERM_READ, read_report_map, NULL, NULL),
-	BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT,
-			       BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
-			       SAMPLE_BT_PERM_READ,
-			       read_input_report, NULL, NULL),
-	BT_GATT_CCC(input_ccc_changed,
-		    SAMPLE_BT_PERM_READ | SAMPLE_BT_PERM_WRITE),
-	BT_GATT_DESCRIPTOR(BT_UUID_HIDS_REPORT_REF, BT_GATT_PERM_READ,
-			   read_report, NULL, &input),
-	BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_CTRL_POINT,
-			       BT_GATT_CHRC_WRITE_WITHOUT_RESP,
-			       BT_GATT_PERM_WRITE,
-			       NULL, write_ctrl_point, &ctrl_point),
+    BT_GATT_PRIMARY_SERVICE(BT_UUID_HIDS),
+    BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_INFO, BT_GATT_CHRC_READ,
+                   BT_GATT_PERM_READ, read_info, NULL, &info),
+    BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT_MAP, BT_GATT_CHRC_READ,
+                   BT_GATT_PERM_READ, read_report_map, NULL, NULL),
+    BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_REPORT,
+                   BT_GATT_CHRC_READ | BT_GATT_CHRC_NOTIFY,
+                   SAMPLE_BT_PERM_READ,
+                   read_input_report, NULL, NULL),
+    BT_GATT_CCC(input_ccc_changed,
+            SAMPLE_BT_PERM_READ | SAMPLE_BT_PERM_WRITE),
+    BT_GATT_DESCRIPTOR(BT_UUID_HIDS_REPORT_REF, BT_GATT_PERM_READ,
+               read_report, NULL, &input),
+    BT_GATT_CHARACTERISTIC(BT_UUID_HIDS_CTRL_POINT,
+                   BT_GATT_CHRC_WRITE_WITHOUT_RESP,
+                   BT_GATT_PERM_WRITE,
+                   NULL, write_ctrl_point, &ctrl_point),
 );
 
 static const struct gpio_dt_spec buttonVolDown = GPIO_DT_SPEC_GET(DT_NODELABEL(button_vol_down), gpios);
@@ -247,15 +247,15 @@ void hog_button_loop(void)
     static bool lastPressed = false;
     static bool lastLongPressed = false;
 
-	gpio_pin_configure_dt(&buttonVolDown, GPIO_INPUT);
-	gpio_pin_configure_dt(&buttonVolUp, GPIO_INPUT);
-	gpio_pin_configure_dt(&buttonPause, GPIO_INPUT);
-	gpio_pin_configure_dt(&buttonExtra, GPIO_INPUT);
-	gpio_pin_configure_dt(&buttonMaintenance, GPIO_INPUT);
+    gpio_pin_configure_dt(&buttonVolDown, GPIO_INPUT);
+    gpio_pin_configure_dt(&buttonVolUp, GPIO_INPUT);
+    gpio_pin_configure_dt(&buttonPause, GPIO_INPUT);
+    gpio_pin_configure_dt(&buttonExtra, GPIO_INPUT);
+    gpio_pin_configure_dt(&buttonMaintenance, GPIO_INPUT);
 
     memset(&hid_key_report, 0, sizeof(hid_key_report));
 
-	for (;;) {
+    for (;;) {
         now = k_uptime_get();
         action = NONE;
         anyPressed = false;
@@ -356,6 +356,6 @@ void hog_button_loop(void)
             }
         }
 
-		k_sleep(K_MSEC(50));
-	}
+        k_sleep(K_MSEC(50));
+    }
 }
