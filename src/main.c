@@ -21,6 +21,7 @@
 #include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/uuid.h>
 #include <zephyr/bluetooth/gatt.h>
+#include <zephyr/drivers/gpio.h>
 
 #include "hog.h"
 
@@ -47,15 +48,24 @@ static void connected(struct bt_conn *conn, uint8_t err)
 	if (bt_conn_set_security(conn, BT_SECURITY_L2)) {
 		printk("Failed to set security\n");
 	}
+
+    gpio_pin_set_dt(&statusLed, 1);
+    gpio_pin_set_dt(&actionLed, 0);
+
+    buttons_active = true;
 }
 
 static void disconnected(struct bt_conn *conn, uint8_t reason)
 {
 	char addr[BT_ADDR_LE_STR_LEN];
 
+    buttons_active = false;
+
 	bt_addr_le_to_str(bt_conn_get_dst(conn), addr, sizeof(addr));
 
 	printk("Disconnected from %s (reason 0x%02x)\n", addr, reason);
+    gpio_pin_set_dt(&statusLed, 0);
+    gpio_pin_set_dt(&actionLed, 1);
 }
 
 static void security_changed(struct bt_conn *conn, bt_security_t level,
@@ -130,6 +140,15 @@ static struct bt_conn_auth_cb auth_cb_display = {
 int main(void)
 {
 	int err;
+
+	if (!gpio_is_ready_dt(&statusLed) ||
+            !gpio_is_ready_dt(&actionLed)
+    ) {
+		return 0;
+	}
+
+	gpio_pin_configure_dt(&statusLed, GPIO_OUTPUT_INACTIVE);
+    gpio_pin_configure_dt(&actionLed, GPIO_OUTPUT_ACTIVE);
 
 	err = bt_enable(bt_ready);
 	if (err) {
