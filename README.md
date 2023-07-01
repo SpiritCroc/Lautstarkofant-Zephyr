@@ -36,6 +36,10 @@ From your [Zephyr workspace](https://docs.zephyrproject.org/latest/develop/getti
 
 Customize in `app.overlay`.
 
+## Reference picture
+
+<img src="https://raw.githubusercontent.com/SpiritCroc/Lautstarkofant-Zephyr/master/pictures/lautstarkofant.jpg" height="500"/>
+
 ## Acknowledgements
 
 Builds on [zephyr](https://github.com/zephyrproject-rtos/zephyr) sample code, released under the Apache-2.0 license.
